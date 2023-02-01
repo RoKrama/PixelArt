@@ -1,0 +1,25 @@
+#pragma once
+#include "PixelArt.h"
+#include "InitArt.h"
+#include <QResizeEvent>
+#include <qpainterpath.h>
+
+class UserInterface : public QWidget
+{
+    PixelArt art_station;
+
+    QRect setScreen();
+    QRect screen_rect;
+    QSize screen_dim;
+
+
+    QPainter painter;
+
+    void resizeEvent(QResizeEvent*) override;
+    void paintEvent(QPaintEvent*) override;
+
+public:
+    UserInterface();
+    ~UserInterface() {};
+};
+

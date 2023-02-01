@@ -1,0 +1,6 @@
+*.qrc
+*.sln
+*.vcxproj*
+*.user
+*.vs
+x64/
