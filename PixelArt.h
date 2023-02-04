@@ -26,36 +26,39 @@ class PixelArt : public QWidget
     PixelArt& operator=(const PixelArt) = delete;
     // deleted cpy_ctor and assigment to prevent making copies
 
-
-    QColorDialog color_dialog;
-    inline void constructCanvas();
-    inline void constructShortcuts();
-
     const int x_n, y_n;
-    const QSize cell_size;
+    int cell_size;
+
     QImage canvas, background;
-    //float fps= 0;
     QPoint canvas_pos, move_pos;
-    QList<QLine> line_list;
-    void paintLines();
+
     QPainter painter;
+    QColor current_color;
+    QColorDialog color_dialog;
+
+    QList<QLine> line_list;
     QPen line_pen;
-
-    bool quantise_m_pos(QPoint&);
-
-    QColor current_clr;
-    QColor draw_rect(const QPoint, const QColor);
 
     const QShortcut undo, redo, move_canvas, open_color_dialog;
     bool moving_canvas, clicked_in_canvas;
-    void undo_fn(bool);
     pix::Cache undo_cache, redo_cache;
+
+    void paintLines();
+    void quantise_m_pos(QPoint&);
+    QColor draw_rect(const QPoint, const QColor);
+    void zoomFn(int);
+    void undo_fn(bool);
 
     void mousePressEvent(QMouseEvent*) override;
     void mouseMoveEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
+    void wheelEvent(QWheelEvent*) override;
     void keyReleaseEvent(QKeyEvent*) override;
     void paintEvent(QPaintEvent*) override;
+
+    inline void constructLines();;
+    inline void constructCanvas();
+    inline void constructShortcuts();
 
 public:
     void setCanvas_pos();

@@ -36,15 +36,15 @@ void UserInterface::resizeEvent(QResizeEvent* event)
 {
     art_station.setGeometry
     (
-        200, 100,
-        geometry().width() - 400, geometry().height() - 200
+        100, 50,
+        geometry().width() - 600, geometry().height() - 100
     );
     art_station.setCanvas_pos();
 }
 void UserInterface::paintEvent(QPaintEvent*)
 {
     painter.begin(this);
-    QPen pen(Qt::darkBlue, 3);
+    QPen pen(Qt::darkGray, 3);
     pen.setCapStyle(Qt::SquareCap);
     painter.setPen(pen);
     painter.drawRect(art_station.geometry().adjusted(-3, -2, 1, 1));
