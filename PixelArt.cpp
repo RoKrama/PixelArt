@@ -1,7 +1,5 @@
 #include "PixelArt.h"
-#include <Windows.h>
-#include <thread>
-PixelArt::PixelArt(const pix::InitReturn vals, QWidget* parent) :
+PixelArt::PixelArt(const InitReturn vals, QWidget* parent) :
 	QWidget(parent),
 
 	cell_size(vals.cell_size), // cell vals.cell_size in pix
@@ -9,14 +7,17 @@ PixelArt::PixelArt(const pix::InitReturn vals, QWidget* parent) :
 
 	canvas(x_n * cell_size, y_n * cell_size, QImage::Format::Format_ARGB32),
 	canvas_pos(0, 0), background(canvas),
+	sc_canvas(), sc_background(),
 	painter(), line_pen(Qt::gray, 1),
 
 	undo			 (QKeySequence::Undo, this),
 	redo			 (QKeySequence::Redo, this),
 	move_canvas		 (QKeySequence(Qt::CTRL | Qt::Key_M), this),
 	open_color_dialog(QKeySequence(Qt::CTRL | Qt::Key_C), this),
+	show_thick_lines (QKeySequence(Qt::CTRL | Qt::Key_T), this),
 
 	moving_canvas(false), clicked_in_canvas(false),
+	scale_clipping(false), thick_lines(false),
 	undo_cache(), redo_cache(),
 
 	color_dialog(QColorDialog(this))
@@ -54,11 +55,20 @@ inline void PixelArt::constructShortcuts()
 		&open_color_dialog, &QShortcut::activated,
 		this, [this] { color_dialog.show(); }
 	);
+		connect( // CTRL_T
+			&show_thick_lines, &QShortcut::activated,
+			this, [this] 
+			{ 
+				thick_lines ? thick_lines = false
+							: thick_lines = true; 
+				update();
+			}
+	);
 }
 inline void PixelArt::constructLines() 
 {
+	// pixel lines
 	if (!line_list.empty()) line_list.clear();
-
 	for (int i = 0; i <= x_n; i++)
 		line_list.push_back(
 			QLine(
@@ -66,12 +76,28 @@ inline void PixelArt::constructLines()
 				i * cell_size, canvas.size().height()
 			)
 		);
-
 	for (int i = 0; i <= y_n; i++) 
 		line_list.push_back(
 			QLine(
 				0,					   i * cell_size,
 				canvas.size().width(), i * cell_size
+			)
+		);
+
+	// orientation grid
+	if (!thick_lines_list.empty()) thick_lines_list.clear();
+	for (int i = 1; i <= 2; i++)
+		thick_lines_list.push_back(
+			QLine(
+				i * ((x_n * cell_size) / 3), 0,
+				i * ((x_n * cell_size) / 3), canvas.size().height()
+			)
+		);
+	for (int i = 1; i <= 2; i++)
+		thick_lines_list.push_back(
+			QLine(
+				0,					   i * ((y_n * cell_size) / 3),
+				canvas.size().width(), i * ((y_n * cell_size) / 3)
 			)
 		);
 }
@@ -92,8 +118,9 @@ QColor PixelArt::draw_rect(const QPoint at, const QColor with)
 
 	painter.end();
 
-	update(QRect((at + canvas_pos), QSize(cell_size, cell_size)));
 	// clip for faster load
+	update(QRect((at + canvas_pos), QSize(cell_size, cell_size)));
+
 	return with;
 }
 
@@ -143,9 +170,12 @@ void PixelArt::mousePressEvent(QMouseEvent* event)
 			QPoint temp_clicked_pos = (event->pos());
 			quantise_m_pos(temp_clicked_pos);
 			undo_cache.push_back( // before drawing over
-				pix::Cell( // constructing cell and loading into undo cache
-					temp_clicked_pos,
-					canvas.pixelColor(temp_clicked_pos)
+				Cell( // constructing cell and loading into undo cache
+					canvas.pixelColor(temp_clicked_pos),
+					std::pair<int, int>(
+						temp_clicked_pos.x() / cell_size,
+						temp_clicked_pos.y() / cell_size
+					)
 				)
 			);
 			draw_rect(temp_clicked_pos, current_color);
@@ -196,8 +226,7 @@ void PixelArt::wheelEvent(QWheelEvent* event)
 }
 void PixelArt::zoomFn(int dir)
 {
-	//auto t1 = std::chrono::high_resolution_clock::now();
-
+	auto t1 = std::chrono::high_resolution_clock::now();
 	cell_size += dir;
 	QSize scale_size(
 		cell_size * x_n,
@@ -213,18 +242,6 @@ void PixelArt::zoomFn(int dir)
 		{ canvas = canvas.scaled(scale_size); }
 	);
 
-	// making cache reference points relevant for new image size
-	for (pix::Cell& cell : undo_cache)
-	{
-		cell.first.rx() += (dir * (cell.first.x() / (cell_size - dir)));
-		cell.first.ry() += (dir * (cell.first.y() / (cell_size - dir)));
-	}
-	for (pix::Cell& cell : redo_cache)
-	{
-		cell.first.rx() += (dir * (cell.first.x() / (cell_size - dir)));
-		cell.first.ry() += (dir * (cell.first.y() / (cell_size - dir)));
-	}
-
 	// making zoom appear happening from center of the canvas
 	canvas_pos.rx() -= ((dir * x_n) / 2);
 	canvas_pos.ry() -= ((dir * x_n) / 2);
@@ -232,16 +249,19 @@ void PixelArt::zoomFn(int dir)
 	thread1.join();
 	paintLines(); // irrelevant if canvas is scaled, only background must be
 	thread2.join();
-	
-	//auto t2 = std::chrono::high_resolution_clock::now();
-	//std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << std::endl;
+
+	auto t2 = std::chrono::high_resolution_clock::now();
+	calc1 += (((float)std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count())
+		/ ((float)(scale_size.height())) );
 } 
+void PixelArt::zoomClipFn(int dir)
+{}
 void PixelArt::paintEvent(QPaintEvent*)
 {
+	
 	painter.begin(this);
 	painter.drawImage(canvas_pos, canvas);
 	painter.drawImage(canvas_pos, background);
-
 	painter.setPen(line_pen);
 	painter.drawRect( // outer border
 		QRect( 
@@ -249,34 +269,47 @@ void PixelArt::paintEvent(QPaintEvent*)
 			canvas.size() + QSize(1, 1)
 		)
 	);
+
+	if (thick_lines)
+	{
+		painter.setPen(QPen(Qt::black, 2));
+		for (auto& ref : thick_lines_list)
+			painter.drawLine(ref.translated(canvas_pos));
+	}
 	painter.end();
 }
 // SHORTCUTS
 void PixelArt::undo_fn(bool undo)
 {
-	pix::Cache* sip, * fill;
-	if (undo) sip = &undo_cache, fill = &redo_cache;
-	else      sip = &redo_cache, fill = &undo_cache;
+	Cache* sip; Cache* fill;
+	undo ? sip = &undo_cache, fill = &redo_cache
+	     : sip = &redo_cache, fill = &undo_cache;
 
 	if (!sip->empty())
 	{
-		pix::Cell* temp = &sip->back();
+		Cell* temp = &sip->back();
 		fill->push_back(
-			pix::Cell(
-				temp->first,
-				canvas.pixelColor(temp->first)
+			Cell(
+				canvas.pixelColor(
+					QPoint(
+						temp->position.first  * cell_size, 
+						temp->position.second * cell_size
+					)
+				),
+				temp->position 
 			)
 		); // to other cache before drawing to preserve initial colour
-		draw_rect(temp->first, temp->second);
+		draw_rect(
+			QPoint(
+				temp->position.first  * cell_size,
+				temp->position.second * cell_size
+			), 
+			temp->color
+		);
 		sip->pop_back();
 	}
 }
 PixelArt::~PixelArt()
 {
-	QImage save_img(background);
-	painter.begin(&save_img);
-	painter.drawImage(0,0,canvas);
-	painter.end();
-	save_img.save("heart.png");
-	canvas.save("trsp_heart.png");
+	std::cout << calc1;
 }

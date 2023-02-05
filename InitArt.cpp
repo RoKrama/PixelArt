@@ -1,14 +1,14 @@
 #include "InitArt.h"
 
-pix::InitReturn InitArtDialog::initialise()
+InitReturn InitArtDialog::initialise()
 {
-    pix::InitReturn temp;
+    InitReturn temp;
     InitArtDialog dialog(&temp);
     dialog.exec();
     return temp;
 }
 
-InitArtDialog::InitArtDialog(pix::InitReturn* in_r_vals) :
+InitArtDialog::InitArtDialog(InitReturn* in_r_vals) :
     r_vals(in_r_vals),
     cells_x(0), cells_y(0), cell_size(0),
     create_b(this), //exit_b(this),
@@ -59,7 +59,7 @@ InitArtDialog::InitArtDialog(pix::InitReturn* in_r_vals) :
 }
 InitArtDialog::~InitArtDialog()
 {
-    *r_vals = pix::InitReturn
+    *r_vals = InitReturn
     (
         edit_x.text().toInt(),
         edit_y.text().toInt(),

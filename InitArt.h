@@ -14,7 +14,7 @@ class InitArtDialog : public QDialog
 	InitArtDialog(const InitArtDialog&) = delete;
 	InitArtDialog& operator=(const InitArtDialog&) = delete;
 
-	pix::InitReturn* const r_vals;
+	InitReturn* const r_vals;
 
 	unsigned int cells_x, cells_y, cell_size;
 
@@ -27,7 +27,7 @@ class InitArtDialog : public QDialog
 
 
 public:
-	pix::InitReturn static initialise();
-	InitArtDialog(pix::InitReturn*) ;
+	InitReturn static initialise();
+	InitArtDialog(InitReturn*) ;
 	~InitArtDialog();
 };
