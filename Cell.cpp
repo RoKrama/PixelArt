@@ -7,8 +7,6 @@
 //	//		ref_second.point()
 //}
 
-Cell::Cell() : color(), position() {}
-
 Cell::Cell(QColor c, std::pair<int, int> pos):
 	color(c), position(pos)
 {}

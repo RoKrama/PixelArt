@@ -11,7 +11,7 @@ struct Cell
     std::pair<int, int> position;
 
     //static Cell2D& update_pts(Cell2D&);
-    Cell();
+    Cell() {};
     Cell(QColor, std::pair<int, int>);
     Cell(QColor, int, int);
 };
