@@ -13,8 +13,9 @@ UserInterface::UserInterface() :
     setScreen();
     setPalette(QPalette(Qt::black));
     showMaximized();
+    art_station.setCanvas_pos();
     art_station.show();
-    art_station.setCanvas_pos(); 
+   
 }
 
 QRect UserInterface::setScreen()
