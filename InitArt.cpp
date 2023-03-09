@@ -20,7 +20,7 @@ InitArtDialog::InitArtDialog(InitReturn* in_r_vals) :
     setStyleSheet
     (
         "QLineEdit "
-        "{ "
+        "{"
             "background-color: rgb(30,30,40);"
             "border-color: rgb(242,227,153);"
             "border-width: 1px;"

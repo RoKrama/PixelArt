@@ -8,12 +8,12 @@ class UserInterface : public QWidget
 {
     PixelArt art_station;
 
-    QRect setScreen();
+    void setScreen();
     QRect screen_rect;
     QSize screen_dim;
 
 
-    QPainter painter;
+    QPainter ui_painter;
 
     void resizeEvent(QResizeEvent*) override;
     void paintEvent(QPaintEvent*) override;
