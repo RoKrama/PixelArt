@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-class PixelArt;
+class Viewport;
 class InitArt;
 class InitArtDialog;
 class Cell;

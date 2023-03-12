@@ -6,7 +6,7 @@
 
 class UserInterface : public QWidget
 {
-    PixelArt art_station;
+    Viewport art_station;
 
     void setScreen();
     QRect screen_rect;

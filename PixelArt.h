@@ -18,14 +18,14 @@
 #include <mutex>
 #include "Cell.h"
 #include <vector>
-class PixelArt : public QWidget
+class Viewport : public QWidget
 {
     Q_OBJECT;
 
-    PixelArt(const PixelArt&) = delete;
-    PixelArt& operator=(const PixelArt&) = delete;
+    Viewport(const Viewport&) = delete;
+    Viewport& operator=(const Viewport&) = delete;
     // deleted cpy_ctor and assigment to prevent making copies
-    PixelArt() = delete;
+    Viewport() = delete;
 
     const int x_n, y_n;
     int cell_size;
@@ -50,7 +50,7 @@ class PixelArt : public QWidget
     const QShortcut undo, redo, move_canvas, open_color_dialog, show_thick_lines;
     bool moving_canvas, clicked_in_canvas, clipped, thick_lines;
 
-    using Cache = std::list<Cell>;
+    using Cache = std::list<std::list<Cell>>;
     Cache undo_cache, redo_cache;
 
 
@@ -82,6 +82,6 @@ class PixelArt : public QWidget
 
 public:
     void setCanvas_pos();
-    PixelArt(const InitReturn, QWidget*);
-    ~PixelArt();
+    Viewport(const InitReturn, QWidget*);
+    ~Viewport();
 };

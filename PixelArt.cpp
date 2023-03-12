@@ -1,5 +1,5 @@
 #include "PixelArt.h"
-PixelArt::PixelArt(const InitReturn vals, QWidget* parent) :
+Viewport::Viewport(const InitReturn vals, QWidget* parent) :
 	QWidget(parent),
 
 	cell_size(vals.cell_size), // cell vals.cell_size in pix
@@ -36,7 +36,7 @@ PixelArt::PixelArt(const InitReturn vals, QWidget* parent) :
 	constructShortcuts();
 }
 // CONSTRUCTOR FUNCTIONS
-inline void PixelArt::constructCanvas()
+inline void Viewport::constructCanvas()
 {
 	canvas = &img_pair.first;
 	for (int i = 0; i < x_n; i++)
@@ -53,7 +53,7 @@ inline void PixelArt::constructCanvas()
 	for (auto& ref : fib) ref = std::cbrt(ref);
 	
 }
-inline void PixelArt::constructShortcuts()
+inline void Viewport::constructShortcuts()
 {
 	connect( // CTRL_Z
 		&undo, &QShortcut::activated,
@@ -84,7 +84,7 @@ inline void PixelArt::constructShortcuts()
 		this, [this] { current_color = color_dialog.currentColor(); }
 	);
 }
-inline void PixelArt::constructLines()
+inline void Viewport::constructLines()
 {
 	// pixel lines
 	auto range = [this](int val) -> int
@@ -146,7 +146,7 @@ inline void PixelArt::constructLines()
 	paintLines();
 }
 // EVENTS
-void PixelArt::wheelEvent(QWheelEvent* event)
+void Viewport::wheelEvent(QWheelEvent* event)
 {
 	QPoint pos(mapFromGlobal(QCursor::pos()));
 	if ( // ctrl is held and mouse is in intersected precondition
@@ -170,7 +170,7 @@ void PixelArt::wheelEvent(QWheelEvent* event)
 	zoomClipFn(direction, pos);
 	update();
 }
-void PixelArt::mousePressEvent(QMouseEvent* event)
+void Viewport::mousePressEvent(QMouseEvent* event)
 {
 	if (!img_rect.contains(event->pos())) return;
 
@@ -189,7 +189,8 @@ void PixelArt::mousePressEvent(QMouseEvent* event)
 		// getting clicked cell position and storing in std::pair<int, int>
 		std::pair<int, int> cell_index = quantise_m_pos(event->pos());
 		if (cell_same(cell_index)) return; // check if same colour
-		undo_cache.push_front(
+		undo_cache.push_front(std::list<Cell>()); 
+		undo_cache.front().push_front(
 			Cell( // constructing cell and loading into undo cache
 				cell_map[cell_index.first][cell_index.second].color,
 				cell_index
@@ -198,7 +199,7 @@ void PixelArt::mousePressEvent(QMouseEvent* event)
 		draw_rect(cell_index, current_color);
 	}
 }
-void PixelArt::mouseMoveEvent(QMouseEvent* event)
+void Viewport::mouseMoveEvent(QMouseEvent* event)
 {
 	// moving of canvas happens if true
 	if (!(
@@ -228,7 +229,7 @@ void PixelArt::mouseMoveEvent(QMouseEvent* event)
 		std::pair<int, int> cell_index = quantise_m_pos(event->pos());
 		if (cell_same(cell_index)) return;
 
-		undo_cache.push_front(
+		undo_cache.front().push_front(
 			Cell( // constructing cell and loading into undo cache
 				cell_map[cell_index.first][cell_index.second].color,
 				cell_index
@@ -237,7 +238,7 @@ void PixelArt::mouseMoveEvent(QMouseEvent* event)
 		draw_rect(cell_index, current_color);
 	}
 }
-void PixelArt::mouseReleaseEvent(QMouseEvent* event)
+void Viewport::mouseReleaseEvent(QMouseEvent* event)
 {
 	clicked_in_canvas = false; // reset
 	if (!clipped) return;
@@ -259,12 +260,12 @@ void PixelArt::mouseReleaseEvent(QMouseEvent* event)
 	draw_in_range(canvas->rect().translated(canvas_pos));
 	update();
 }
-void PixelArt::keyReleaseEvent(QKeyEvent* event)
+void Viewport::keyReleaseEvent(QKeyEvent* event)
 {
 	if (moving_canvas && event->key() == Qt::Key_M)
 		moving_canvas = false; // reset
 }
-void PixelArt::paintEvent(QPaintEvent*)
+void Viewport::paintEvent(QPaintEvent*)
 {
 
 
@@ -304,7 +305,7 @@ void PixelArt::paintEvent(QPaintEvent*)
 	//std::cout << dur << c() << std::endl;
 }
 // CLASS FUNCTIONS
-std::pair<int, int> PixelArt::quantise_m_pos(QPoint mouse_pos)
+std::pair<int, int> Viewport::quantise_m_pos(QPoint mouse_pos)
 {
 	return // get point relative to canvas position
 		std::pair<int, int>(
@@ -312,7 +313,7 @@ std::pair<int, int> PixelArt::quantise_m_pos(QPoint mouse_pos)
 			(mouse_pos.y() - img_rect.top() ) / cell_size
 		);
 }
-QColor PixelArt::draw_rect(const std::pair<int, int>& at, const QColor with)
+QColor Viewport::draw_rect(const std::pair<int, int>& at, const QColor with)
 {
 	update_cell_map(at, with);
 	QRect area(
@@ -334,17 +335,17 @@ QColor PixelArt::draw_rect(const std::pair<int, int>& at, const QColor with)
 
 	return with;
 }
-bool PixelArt::cell_same(const std::pair<int, int>& at)
+bool Viewport::cell_same(const std::pair<int, int>& at)
 {
 	return
 		cell_map[at.first][at.second].color == current_color;
 }
-inline void PixelArt::update_cell_map(std::pair<int, int> pos, QColor color)
+inline void Viewport::update_cell_map(std::pair<int, int> pos, QColor color)
 {
 	cell_map[pos.first][pos.second].color = color;
 }
 
-inline void PixelArt::zoomClipFn(int dir, const QPoint& from)
+inline void Viewport::zoomClipFn(int dir, const QPoint& from)
 {
 	//t1 = std::chrono::high_resolution_clock::now();
 	cell_size += dir;
@@ -439,7 +440,7 @@ inline void PixelArt::zoomClipFn(int dir, const QPoint& from)
 		b_thread.join();
 	}
 }
-void PixelArt::draw_in_range(const QRect& show)
+void Viewport::draw_in_range(const QRect& show)
 {
 	int dx_r = x_n - std::max<int>(
 		0,
@@ -471,7 +472,7 @@ void PixelArt::draw_in_range(const QRect& show)
 			);
 	painter.end();
 }
-QSize PixelArt::clipped_canvas_size()
+QSize Viewport::clipped_canvas_size()
 {
 	return QSize(
 		std::min<int>(
@@ -484,18 +485,18 @@ QSize PixelArt::clipped_canvas_size()
 			)
 	);
 }
-inline void PixelArt::set_clipped_canvas_pos()
+inline void Viewport::set_clipped_canvas_pos()
 {
 	canvas_pos.setX(std::max<int>(img_rect.left(), -width()));
 	canvas_pos.setY(std::max<int>(img_rect.top(), -height()));
 }
-inline void PixelArt::set_offset()
+inline void Viewport::set_offset()
 {
 	canvas_offset.setX(img_rect.left() % cell_size);
 	canvas_offset.setY(img_rect.top() % cell_size);
 }
 
-void PixelArt::paintLines()
+void Viewport::paintLines()
 {
 	line_painter.begin(&background);
 	line_painter.setPen(line_pen);
@@ -503,7 +504,7 @@ void PixelArt::paintLines()
 	line_painter.drawLines(line_list_y);
 	line_painter.end();
 }
-void PixelArt::set_bg_clipped_pos()
+void Viewport::set_bg_clipped_pos()
 {
 	// back_pos will be limited to one cell size
 	// while moving it will jump for a cell size
@@ -533,7 +534,7 @@ void PixelArt::set_bg_clipped_pos()
 	else back_pos.setY(canvas_offset.y());
 }
 // SHORTCUTS
-void PixelArt::undo_fn(bool undo)
+void Viewport::undo_fn(bool undo)
 {
 	Cache* sip; Cache* fill;
 	if (undo) sip = &undo_cache, fill = &redo_cache;
@@ -541,20 +542,23 @@ void PixelArt::undo_fn(bool undo)
 
 	if (!sip->empty())
 	{
-		Cell* temp = &sip->front();
-		fill->push_front(
-			Cell(
-				cell_map[temp->position.first][temp->position.second].color,
-				temp->position
-			)
-		); // to other cache before drawing to preserve initial colour
-		draw_rect(temp->position, temp->color);
+		fill->push_front(std::list<Cell>());
+		for (auto& i : sip->front())
+		{
+			fill->front().push_front(
+				Cell(
+					cell_map[i.position.first][i.position.second].color,
+					i.position
+				)
+			); // to other cache before drawing to preserve initial colour
+			draw_rect(i.position, i.color);
+		}
 		sip->pop_front();
 	}
 }
 
 // PUBLIC
-void PixelArt::setCanvas_pos()
+void Viewport::setCanvas_pos()
 {
 	canvas_pos = rect().center() - canvas->rect().center();
 	img_rect.moveTopLeft(canvas_pos);
@@ -563,5 +567,5 @@ void PixelArt::setCanvas_pos()
 	draw_in_range(img_rect);
 	update();
 }
-PixelArt::~PixelArt()
+Viewport::~Viewport()
 {}

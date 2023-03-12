@@ -1,11 +1,11 @@
 #include "UserInterface.h"
 
 UserInterface::UserInterface() :
-    art_station(PixelArt(InitArtDialog::initialise(), this)),
+    art_station(Viewport(InitArtDialog::initialise(), this)),
     screen_dim(screen_rect.width(), screen_rect.height()),
     ui_painter()
 {
-    setWindowTitle("PixelArt");
+    setWindowTitle("Viewport");
     setObjectName("Ui");
     art_station.setObjectName("Viewport");
 
